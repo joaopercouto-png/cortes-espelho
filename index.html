@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cortes">
+<meta name="theme-color" content="#0d0d0f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Cortes Finanças</title>
+<style>
+  /* TEMA ESCURO + VERMELHO YOUTUBE (troca 23/07). Fundo quase preto, destaque
+     vermelho, cards com contorno vermelho, nav flutuante.
+     SEPARACAO DE SINAIS: como o destaque virou vermelho, o ERRO/perigo foi pro
+     ROSA (--danger #ff4d9e, hue 333) pra não se confundir; e o teto batido é
+     AMARELO (--warn #ffd60a, hue 50). Três matizes distintas. */
+  :root{
+    --bg:#0d0d0f;
+    --card:#1a1a1d;
+    --soft:#232327;
+    --line:#2f2f34;
+    --text:#f7f7f8;
+    --muted:#98989f;
+    --dim:#6b6b73;
+    --accent:#ff3b30;
+    --accent-soft:rgba(255,59,48,.15); --accent-ink:#ff5b52;
+    --danger:#ff4d9e;
+    --danger-soft:rgba(255,77,158,.13);
+    --warn:#ffd60a;
+    --warn-soft:rgba(255,214,10,.12);
+    --ok:#32d74b;
+    --r:24px;
+    --r-sm:16px;
+    --sh:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+    padding-top:env(safe-area-inset-top);-webkit-font-smoothing:antialiased;
+    overscroll-behavior-y:none}
+  header{padding:14px 18px 2px}
+  .htop{display:flex;align-items:center;gap:11px;min-width:0}
+  .avatar{width:44px;height:44px;border-radius:50%;flex:none;object-fit:cover;
+    background:#151515;box-shadow:0 0 0 1px var(--line)}
+  .hi{font-size:12.5px;color:var(--muted)}
+  h1{font-size:21px;font-weight:700;margin:2px 0 0;letter-spacing:-.03em}
+  /* Faixa do espelho: precisa ficar OBVIO que e um retrato e nao o app ao vivo,
+     senao o usuario acha que os numeros sao de agora e toma decisao errada. */
+  .mirror{margin:12px 18px 0;background:var(--soft);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:10px 12px;font-size:11.5px;color:var(--muted);
+    display:flex;gap:8px;align-items:center;line-height:1.4}
+  .mirror b{color:var(--text)}
+  .mirror.velho{background:var(--warn-soft);border-color:rgba(255,214,10,.4);color:#f5e3a0}
+  .mirror.velho b{color:var(--warn)}
+  .hero{margin:12px 18px 0;border-radius:var(--r);padding:18px;overflow:hidden;
+    background:var(--card);border:1px solid var(--accent);
+    color:var(--text);box-shadow:var(--sh);position:relative}
+  .hero:after{content:"";position:absolute;right:-30px;top:-46px;width:150px;height:150px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,59,48,.13) 0%,transparent 70%)}
+  .hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-bottom:13px;position:relative;z-index:1}
+  .hero-name{font-size:15.5px;font-weight:650;letter-spacing:-.02em}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--accent-soft);color:var(--accent);
+    padding:5px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .hnum{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+    margin-bottom:12px;position:relative;z-index:1}
+  .big{font-size:44px;font-weight:750;letter-spacing:-.04em;line-height:.95}
+  .big small{font-size:16px;font-weight:600;opacity:.72}
+  .hnum .lbl{font-size:11px;opacity:.82;margin-top:3px}
+  .hnum .side{text-align:right;font-size:11.5px;opacity:.9;line-height:1.6}
+  .hnum .side b{font-size:13.5px;font-weight:700}
+  .chart{position:relative;z-index:1;background:rgba(255,255,255,.04);
+    border-radius:var(--r-sm);padding:10px 10px 6px}
+  .plot{position:relative;height:58px;display:flex;align-items:flex-end;
+    justify-content:space-between;gap:4px}
+  .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+    align-items:center;height:100%;position:relative}
+  .bar{width:100%;max-width:20px;border-radius:4px 4px 0 0;background:rgba(255,59,48,.48);
+    min-height:2px}
+  .col.today .bar{background:var(--accent)}
+  .col.today.over .bar{background:var(--warn)}
+  .col .val{position:absolute;left:50%;transform:translateX(-50%);font-size:10.5px;
+    font-weight:700;white-space:nowrap}
+  .capline{position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.18)}
+  .capline span{position:absolute;left:0;top:-13px;font-size:9px;opacity:.85;font-weight:600}
+  .days{display:flex;justify-content:space-between;gap:4px;margin-top:6px}
+  .days span{flex:1;text-align:center;font-size:9.5px;opacity:.75;
+    font-variant-numeric:tabular-nums}
+  .days span.now{opacity:1;font-weight:800}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:12px 18px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px;box-shadow:var(--sh)}
+  .kpi .top{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+  .kpi .ico{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;
+    background:var(--accent-soft);color:var(--accent);flex:none}
+  .kpi .lab{font-size:11px;color:var(--muted);font-weight:600}
+  .kpi .num{font-size:25px;font-weight:750;letter-spacing:-.035em;line-height:1}
+  .kpi .sub{font-size:10.5px;color:var(--dim);margin-top:4px}
+  main{padding:0 18px calc(108px + env(safe-area-inset-bottom))}
+  .view{display:none}
+  .view.active{display:block}
+  h2{font-size:19px;font-weight:750;letter-spacing:-.02em;margin:22px 0 11px;
+    display:flex;align-items:center;justify-content:space-between}
+  h2 .cnt{font-size:12px;color:var(--accent-ink);font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    overflow:hidden;margin-bottom:12px;box-shadow:var(--sh)}
+  .row{display:flex;gap:14px;padding:14px;align-items:flex-start}
+  .thumb{width:104px;height:138px;border-radius:18px;object-fit:cover;flex:none;
+    background:var(--soft);border:1px solid var(--line)}
+  .thumb.wide{width:132px;height:76px}
+  .info{flex:1;min-width:0}
+  .title{font-size:14px;font-weight:650;line-height:1.34;margin:0 0 8px;
+    letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:3;
+    -webkit-box-orient:vertical;overflow:hidden}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .tag{font-size:11px;padding:4px 11px;border-radius:999px;font-weight:600;
+    background:var(--soft);color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+  .tag.score{background:var(--accent-soft);color:var(--accent-ink)}
+  .tag.score.low{background:var(--soft);color:var(--dim)}
+  .tag.alert{background:var(--warn-soft);color:var(--warn);font-weight:700}
+  /* ---------- card com CAPA GRANDE (estrutura das referencias) ----------
+     Mudanca ESTRUTURAL, nao de estilo: a lista deixou de ser "miniatura no canto +
+     texto" e virou "capa grande no topo, texto embaixo" — o padrao dos catalogos
+     que o usuario manda de referencia. Imagem por cima com o card cortando os
+     cantos (o .card ja tem overflow:hidden).
+     Proporcao por formato: short vira 4/3 e corte longo 16/9. 3/4 (testado) dava
+     UM card por tela — capa grande demais mata a varredura de 9 itens. E forcar
+     16/9 no vertical cortaria a cabeca do entrevistado.
+     `.cover.vazio` (arquivo apagado / sem capa): faixa fina, porque um bloco
+     gigante com so uma letra e o pior uso possivel de meia tela. */
+  .cover{width:100%;display:block;object-fit:cover;object-position:center 38%;
+    background:var(--soft);aspect-ratio:4/3}
+  .cover.wide{aspect-ratio:16/9}
+  .cover.vazio{aspect-ratio:16/5}
+  .vbody{padding:14px 15px 2px}
+  .vbody .title{margin-bottom:10px}
+  .notice{border-radius:var(--r-sm);padding:12px 13px;font-size:12.5px;line-height:1.5;
+    margin-bottom:11px;display:flex;gap:9px;align-items:flex-start;border:1px solid}
+  .notice .nic{flex:none;margin-top:1px}
+  .notice.warn{background:var(--warn-soft);border-color:rgba(255,214,10,.4);color:#f5e3a0}
+  .notice.warn b{color:var(--warn)}
+  .notice.danger{background:var(--danger-soft);border-color:rgba(255,77,158,.42);color:#ffb3c4}
+  .notice.danger b{color:var(--danger)}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty .eic{width:60px;height:60px;border-radius:50%;margin:0 auto 12px;
+    display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+  /* ---------- FILA EM GRADE (opcao B escolhida pelo usuario, 22/07) ----------
+     Capas em 2 colunas: reconhecer o corte pela IMAGEM e mais rapido que ler
+     titulo. Sem botao no card — tocar abre o detalhe, e o Publicar mora la.
+     Isso e de proposito: obriga a ver o video antes de publicar, o que importa
+     porque a pasta tem corte velho off-theme com score alto. */
+  .qgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .qc{position:relative;border-radius:20px;overflow:hidden;background:var(--card);
+    border:1px solid var(--line);cursor:pointer;transition:.15s;
+    display:flex;flex-direction:column}
+  .qc:active{transform:scale(.97)}
+  .qc .im{position:relative}
+  .qc img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover;
+    object-position:center 38%;background:var(--soft)}
+  .qc .sc{position:absolute;top:8px;left:8px;background:rgba(13,13,15,.82);
+    backdrop-filter:blur(6px);color:var(--accent);font-size:11px;font-weight:750;
+    padding:4px 9px;border-radius:999px;display:inline-flex;gap:3px;align-items:center}
+  .qc .dot{position:absolute;top:11px;right:11px;width:9px;height:9px;border-radius:50%;
+    background:var(--warn);box-shadow:0 0 0 3px rgba(13,13,15,.75)}
+  .qc .qcap{padding:10px 11px 12px;font-size:11.5px;font-weight:600;line-height:1.34;
+    height:3.4em;overflow:hidden}
+  .qc.gone{opacity:.45} .qc.gone .dot{background:var(--muted)}
+  .grid{columns:2;column-gap:11px}
+  .gcard{background:var(--card);border:1px solid var(--line);border-radius:20px;
+    overflow:hidden;break-inside:avoid;margin-bottom:11px;display:inline-block;
+    width:100%;position:relative;box-shadow:var(--sh)}
+  .gcard img{width:100%;object-fit:cover;display:block;background:var(--soft)}
+  .gcard .cap{padding:9px 10px 11px;font-size:11.5px;line-height:1.32;height:42px;
+    font-weight:550;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden}
+  .list{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    overflow:hidden;box-shadow:var(--sh)}
+  .li{display:flex;justify-content:space-between;gap:12px;padding:15px;
+    border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+  .li:last-child{border-bottom:0}
+  .li .lic{width:38px;height:38px;border-radius:13px;flex:none;display:grid;
+    place-items:center;background:var(--soft);color:var(--muted)}
+  .li .k{flex:1;min-width:0}
+  .li .k b{display:block;font-weight:650;font-size:13px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .li .k span{font-size:11px;color:var(--dim)}
+  .li .v{text-align:right;font-size:12px;color:var(--muted);flex:none;font-weight:600}
+  /* Lista "Deu certo": vídeos publicados com a CARA de quem fala. */
+  .pub{display:flex;gap:11px;padding:10px 12px;align-items:center;border-bottom:1px solid var(--line)}
+  .pub:last-child{border-bottom:0}
+  .pub img{width:48px;height:48px;border-radius:13px;object-fit:cover;object-position:center 30%;
+    flex:none;background:var(--soft)}
+  .pub .k{flex:1;min-width:0}
+  .pub .k b{display:block;font-size:12.5px;font-weight:600;line-height:1.3;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .pub .k span{font-size:11px;color:var(--dim)}
+  .pub a{color:var(--accent-ink);text-decoration:none;font-size:12px;font-weight:650;flex:none}
+  .bar2{height:7px;background:var(--soft);border-radius:4px;overflow:hidden;margin-top:11px}
+  .bar2>i{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .bar2>i.full{background:repeating-linear-gradient(45deg,var(--danger) 0 5px,#f5a3a5 5px 10px)}
+  nav{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(14px + env(safe-area-inset-bottom));z-index:30;
+    display:flex;gap:6px;padding:7px;border-radius:999px;
+    background:rgba(26,26,29,.88);backdrop-filter:blur(22px) saturate(160%);
+    border:1px solid var(--line);box-shadow:0 10px 34px rgba(0,0,0,.55)}
+  nav button{min-width:54px;height:50px;padding:0 14px;border-radius:999px;border:0;
+    cursor:pointer;background:transparent;color:var(--dim);display:grid;
+    place-items:center;transition:.18s;position:relative}
+  nav button.active{background:var(--accent);color:#fff}
+  nav .nb{position:absolute;top:0;right:4px;min-width:18px;height:18px;padding:0 4px;
+    border-radius:9px;background:var(--danger);color:#2a0710;font-size:10px;font-weight:700;
+    display:grid;place-items:center;border:2px solid #1a1a1d}
+  nav button.active .nb{border-color:var(--accent)}
+  /* ---------- tela de senha ---------- */
+  #lock{position:fixed;inset:0;z-index:90;background:var(--bg);
+    display:grid;place-items:center;padding:24px}
+  #lock .box{width:100%;max-width:320px;text-align:center}
+  #lock img{width:72px;height:72px;border-radius:50%;margin-bottom:18px;
+    box-shadow:0 0 0 1px var(--line), 0 8px 26px rgba(0,0,0,.5)}
+  #lock h2{display:block;font-size:19px;margin:0 0 6px;letter-spacing:-.02em}
+  #lock p{font-size:12.5px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+  #lock input{width:100%;padding:14px 15px;border-radius:13px;border:1px solid var(--line);
+    background:var(--card);font-size:16px;font-family:inherit;text-align:center;
+    box-shadow:var(--sh);color:var(--text)}
+  #lock input:focus{outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft)}
+  #lock button{width:100%;margin-top:10px;padding:14px;border-radius:13px;border:0;
+    background:var(--accent);color:#141010;font-size:15px;font-weight:650;
+    font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(255,59,48,.28)}
+  #lock button:disabled{opacity:.55}
+  #lockErr{font-size:12.5px;color:var(--danger);margin-top:11px;min-height:17px;font-weight:600}
+  #lockAge{font-size:11.5px;color:var(--dim);margin-top:14px}
+</style>
+</head>
+<body>
+
+<div id="lock">
+  <div class="box">
+    <img src="canal-avatar.png" alt="">
+    <h2>Cortes Finanças</h2>
+    <p>Este espelho está protegido.<br>Digite a senha para ver.</p>
+    <!-- Botão Face ID: só aparece se já foi ativado (localStorage). É o caminho
+         principal quando ativo; a senha vira o link "usar senha" de reserva. -->
+    <button id="btnFace" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" style="vertical-align:-3px;margin-right:6px">
+        <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/>
+        <path d="M9 10v1M15 10v1M12 9v4l-1 1M9.5 15.5a3.5 3.5 0 0 0 5 0"/></svg>
+      Entrar com Face ID</button>
+    <input type="password" id="pw" placeholder="senha" autocomplete="current-password"
+           enterkeyhint="go" autocapitalize="off" autocorrect="off">
+    <button id="btnOpen">Abrir</button>
+    <div id="lockErr"></div>
+    <div id="lockAge"></div>
+  </div>
+</div>
+
+<header>
+  <div class="htop">
+    <img class="avatar" src="canal-avatar.png" alt="">
+    <div style="min-width:0">
+      <div class="hi" id="hi">Cortes Finanças</div>
+      <h1 id="chName">—</h1>
+    </div>
+  </div>
+</header>
+
+<div class="mirror" id="mirror">carregando…</div>
+<div class="hero" id="hero"></div>
+<div class="kpis" id="kpis"></div>
+
+<main>
+  <section class="view active" id="v-fila"></section>
+  <section class="view" id="v-galeria"></section>
+  <section class="view" id="v-status"></section>
+</main>
+
+<nav id="nav"></nav>
+
+<script>
+let D = null, TAB = 'fila';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const base = p => (p || '').split('/').pop();
+const semExt = f => (f || '').replace(/\.mp4$/, '');
+
+const I = {
+  fila:'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  gal:'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2.4"/><rect x="13" y="3" width="8" height="8" rx="2.4"/><rect x="3" y="13" width="8" height="8" rx="2.4"/><rect x="13" y="13" width="8" height="8" rx="2.4"/></svg>',
+  stat:'<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"/><rect x="5" y="11" width="3.5" height="6" rx="1"/><rect x="10.2" y="6" width="3.5" height="11" rx="1"/><rect x="15.5" y="13" width="3.5" height="4" rx="1"/></svg>',
+  up:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  clock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  warn:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
+  play:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.1v13.8a1 1 0 0 0 1.5.9l11-6.9a1 1 0 0 0 0-1.7l-11-6.9A1 1 0 0 0 8 5.1z"/></svg>',
+  check:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  film:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="4" width="19" height="16" rx="3"/><path d="M7 4v16M17 4v16M2.5 12h19"/></svg>',
+  bolt:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg>',
+  users:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.6a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.4"/><path d="M22 20v-1.6a4 4 0 0 0-3-3.9"/><path d="M16.5 3.6a4 4 0 0 1 0 7"/></svg>',
+  eye:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+  sync:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>',
+};
+
+// ---------- decifrar (Web Crypto nativa, sem biblioteca) ----------
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function decifra(blob, senha) {
+  const salt = b64(blob.salt), nonce = b64(blob.nonce), ct = b64(blob.ct);
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha),
+    'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: blob.iter, hash: 'SHA-256' },
+    base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  // AES-GCM autentica: senha errada => exception, nunca lixo silencioso.
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce }, key, ct);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+const PH = (t, wide) => {
+  const w = wide ? 160 : 90, h = wide ? 90 : 160;
+  const ini = (String(t || '?').trim().charAt(0) || '?').toUpperCase().replace(/[&<>"']/g, '');
+  return 'data:image/svg+xml,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">
+       <rect width="${w}" height="${h}" fill="#232327"/>
+       <text x="${w/2}" y="${h/2+5}" font-family="sans-serif" font-size="26" font-weight="700"
+         fill="#ff3b30" text-anchor="middle" opacity=".42">${ini}</text></svg>`);
+};
+const isWide = m => (m?.clip?.format || m?.format) === 'horizontal';
+// A capa vem de DENTRO do blob cifrado (data URI), não de um arquivo solto: como
+// arquivo, a imagem ficaria visível a qualquer um e entregaria o conteúdo do corte
+// mesmo com o resto cifrado.
+const capa = f => (D.posters || {})[f] || '';
+const num = n => new Intl.NumberFormat('pt-BR').format(n);
+
+const DIAS_SUSPEITO = 2;
+const ABANDONO_DIAS = 14;  // parado >= isso: some (lixo off-theme)
+function diasAtraso(s) {
+  if (!s) return 0;
+  const d = new Date(String(s).replace(' ', 'T'));
+  if (isNaN(d)) return 0;
+  return Math.max(0, Math.floor((Date.now() - d) / 86400000));
+}
+function scoreTag(s) {
+  if (s == null) return '';
+  const n = Math.round(s);
+  return `<span class="tag score ${n < 40 ? 'low' : ''}">${I.bolt} ${n}</span>`;
+}
+function fmtWhen(s) {
+  if (!s) return '—';
+  const d = new Date(String(s).replace(' ', 'T'));
+  if (isNaN(d)) return esc(s);
+  return d.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function haQuanto(ts) {
+  const s = (Date.now() / 1000) - ts;
+  if (s < 90) return 'agora há pouco';
+  if (s < 3600) return `há ${Math.round(s/60)} min`;
+  if (s < 86400) return `há ${Math.round(s/3600)}h`;
+  return `há ${Math.round(s/86400)} dia(s)`;
+}
+// Só YouTube: o teto do publisher é exclusivo do YouTube.
+function pubsOk() {
+  return (D.publications || []).filter(p =>
+    (p.platform || 'youtube') === 'youtube' && p.status === 'success');
+}
+function todayCount() {
+  const hoje = new Date().toDateString();
+  return pubsOk().filter(p => {
+    const d = new Date(String(p.timestamp || '').replace(' ', 'T'));
+    return !isNaN(d) && d.toDateString() === hoje;
+  }).length;
+}
+function serie7dias() {
+  const dias = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    dias.push({ d, n: 0 });
+  }
+  pubsOk().forEach(p => {
+    const pd = new Date(String(p.timestamp || '').replace(' ', 'T'));
+    if (isNaN(pd)) return;
+    const a = dias.find(x => x.d.toDateString() === pd.toDateString());
+    if (a) a.n++;
+  });
+  return dias;
+}
+
+let BLOB = null;
+
+// ---------- Face ID (WebAuthn) ----------
+// É um ATALHO por cima, não uma trava criptográfica: o Face ID desbloqueia a
+// senha que já fica guardada no aparelho (localStorage), e essa senha decifra o
+// espelho. A senha continua sendo a reserva — se o Face ID falhar, ela abre.
+// Sem PRF porque o suporte no iOS é instável; aqui o rosto é a "chave de entrada".
+const FID_KEY = 'espelho_faceid';
+const faceAtivo = () => !!localStorage.getItem(FID_KEY);
+const b64enc = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const b64dec = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function biometriaOk() {
+  try {
+    return !!window.PublicKeyCredential &&
+      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch { return false; }
+}
+
+async function registrarFace() {
+  // Precisa da senha já guardada (o rosto vai desbloquear ELA depois).
+  if (!localStorage.getItem('espelho_pw')) throw new Error('sem senha guardada');
+  const cred = await navigator.credentials.create({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    rp: { name: 'Cortes Finanças', id: location.hostname },
+    user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'cortes', displayName: 'Cortes Finanças' },
+    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+    timeout: 60000,
+  }});
+  localStorage.setItem(FID_KEY, b64enc(cred.rawId));
+}
+
+async function entrarFace() {
+  const id = localStorage.getItem(FID_KEY);
+  if (!id) throw new Error('Face ID não ativado');
+  await navigator.credentials.get({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    allowCredentials: [{ type: 'public-key', id: b64dec(id), transports: ['internal'] }],
+    userVerification: 'required',
+    timeout: 60000,
+  }});
+  // Rosto reconhecido → decifra com a senha guardada.
+  const pw = localStorage.getItem('espelho_pw');
+  if (!pw) throw new Error('sem senha guardada');
+  return abrir(pw, false);
+}
+
+async function baixaBlob(tentativa = 1) {
+  // cache-bust: sem isto o GitHub Pages serviria o retrato velho do cache
+  try {
+    const ctl = new AbortController();
+    // 30s: são ~535KB e o 4G do usuário pode estar lento. Sem timeout, o fetch
+    // fica pendurado pra sempre e a tela nunca sai do "carregando".
+    const t = setTimeout(() => ctl.abort(), 30000);
+    const r = await fetch('data.enc.json?t=' + Date.now(), {
+      signal: ctl.signal, cache: 'no-store',
+    });
+    clearTimeout(t);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch (e) {
+    // Uma tentativa a mais: rede de celular derruba conexão com frequência, e
+    // falhar de primeira num 4G instável não deveria travar o app.
+    if (tentativa < 2) {
+      await new Promise(r => setTimeout(r, 1200));
+      return baixaBlob(tentativa + 1);
+    }
+    throw e;
+  }
+}
+
+async function abrir(senha, lembrar) {
+  const err = $('#lockErr'), btn = $('#btnOpen');
+  err.textContent = ''; btn.disabled = true; btn.textContent = 'Abrindo…';
+  try {
+    if (!BLOB) BLOB = await baixaBlob();
+    D = await decifra(BLOB, senha);
+    if (lembrar) {
+      localStorage.setItem('espelho_pw', senha);
+      // Pede armazenamento PERSISTENTE: sem isto o Safari pode apagar o
+      // localStorage depois de ~7 dias sem uso (a política antirrastreamento
+      // dele) e o app voltaria a pedir senha do nada.
+      try { navigator.storage?.persist?.(); } catch (e) {}
+    }
+    $('#lock').style.display = 'none';
+    render();
+  } catch (e) {
+    // Distingue as DUAS falhas. Antes qualquer erro virava "sem internet", o que
+    // mandava o usuário caçar o problema no lugar errado.
+    const rede = !BLOB || String(e.message || '').match(/HTTP|fetch|network|abort|Load failed/i);
+    if (rede) {
+      // Falha de rede NÃO pode apagar a senha salva — senão uma oscilação de 4G
+      // obriga a digitar tudo de novo.
+      BLOB = null;
+      err.textContent = 'Não consegui baixar. Toque em Abrir pra tentar de novo.';
+    } else {
+      err.textContent = 'Senha errada.';
+      localStorage.removeItem('espelho_pw');
+      $('#pw').value = '';
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Abrir';
+  }
+}
+
+let BIOM = false;   // aparelho tem Face ID/Touch ID? (detectado 1x no load)
+
+async function load() {
+  BIOM = await biometriaOk();
+  // Idade do retrato ANTES da senha: se o Mac está desligado há dias, o usuário
+  // merece saber sem precisar digitar nada.
+  try {
+    BLOB = await baixaBlob();
+    if (BLOB.gerado_ts) $('#lockAge').textContent = 'Retrato tirado ' + haQuanto(BLOB.gerado_ts);
+  } catch (e) {
+    // NÃO dá `return` aqui: antes a tela morria neste ponto e uma falha passageira
+    // de rede virava beco sem saída. Agora o botão Abrir continua ativo e refaz o
+    // download — abrir() chama baixaBlob() quando BLOB está null.
+    BLOB = null;
+    $('#lockErr').textContent = 'Não consegui baixar. Toque em Abrir pra tentar de novo.';
+    $('#lockAge').textContent = '';
+  }
+  const salva = localStorage.getItem('espelho_pw');
+  if (faceAtivo() && salva) {
+    // Face ID ligado: NÃO entra sozinho — pede o rosto. A senha fica de reserva
+    // logo abaixo (o WebAuthn get() exige um toque, então é um botão, não automático).
+    $('#btnFace').style.display = '';
+  } else if (salva) {
+    abrir(salva, false);   // sem Face ID: entra direto com a senha guardada
+  }
+}
+
+// Voltou pro app / recuperou sinal: tenta sozinho, sem o usuário fazer nada.
+addEventListener('online', () => { if (!D) load(); });
+
+$('#btnOpen').onclick = () => {
+  const s = $('#pw').value.trim();
+  if (s) abrir(s, true);
+};
+$('#pw').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnOpen').click(); });
+
+$('#btnFace').onclick = async () => {
+  const b = $('#btnFace'); b.disabled = true;
+  try { await entrarFace(); }
+  catch (e) {
+    // Rosto não reconhecido / cancelado: cai pra senha, nada trava.
+    $('#lockErr').textContent = 'Face ID falhou — use a senha.';
+  } finally { b.disabled = false; }
+};
+
+// Gráfico de ÁREA com brilho (estilo das referências: curva suave + gradiente que
+// sobe do fundo + ponto luminoso no fim). Substitui as barras. SVG puro, sem lib.
+function areaChart(serie, cap, topo, noTeto) {
+  const W = 300, H = 92, PADX = 8, PADT = 16, PADB = 16;
+  const n = serie.length;
+  const x = i => PADX + (W - 2 * PADX) * (i / (n - 1));
+  const y = v => PADT + (H - PADT - PADB) * (1 - Math.min(v, topo) / topo);
+  const pts = serie.map((s, i) => [x(i), y(s.n)]);
+
+  // Catmull-Rom -> Bézier: curva suave passando por todos os pontos (como a linha
+  // arredondada das referências, não segmentos retos).
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  const base = H - PADB;
+  const area = `${d}L${pts[n-1][0].toFixed(1)},${base}L${pts[0][0].toFixed(1)},${base}Z`;
+  const end = pts[n - 1];
+  const corHoje = noTeto ? 'var(--warn)' : 'var(--accent)';
+  const capY = cap ? y(cap) : null;
+  const uid = 'g' + Math.random().toString(36).slice(2, 7);
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:96px;display:block">
+    <defs>
+      <linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--accent)" stop-opacity=".42"/>
+        <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${cap ? `<line x1="${PADX}" y1="${capY.toFixed(1)}" x2="${W-PADX}" y2="${capY.toFixed(1)}"
+      stroke="rgba(255,255,255,.16)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      <text x="${PADX}" y="${(capY-4).toFixed(1)}" fill="rgba(255,255,255,.55)" font-size="8">teto ${cap}</text>` : ''}
+    <path d="${area}" fill="url(#${uid})"/>
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${end[0].toFixed(1)}" cy="${end[1].toFixed(1)}" r="7" fill="${corHoje}" opacity=".22"/>
+    <circle cx="${end[0].toFixed(1)}" cy="${end[1].toFixed(1)}" r="3.5" fill="${corHoje}"
+      stroke="var(--card)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    <text x="${end[0].toFixed(1)}" y="${(end[1]-11).toFixed(1)}" fill="var(--text)" font-size="11"
+      font-weight="700" text-anchor="end">${serie[n-1].n}</text>
+  </svg>`;
+}
+
+function render() {
+  $('#chName').textContent = D.canal.label;
+  $('#hi').textContent = D.canal.handle || D.canal.id;
+
+  // Idade do retrato: > 6h vira aviso. O usuário PRECISA saber que não é ao vivo.
+  const idadeH = ((Date.now() / 1000) - D.gerado_ts) / 3600;
+  const m = $('#mirror');
+  m.className = 'mirror' + (idadeH > 6 ? ' velho' : '');
+  m.innerHTML = `<span>${I.sync}</span><div>
+    <b>Espelho — somente leitura.</b> Retrato do app tirado ${haQuanto(D.gerado_ts)}.
+    ${idadeH > 6 ? 'O Mac pode estar desligado. ' : ''}Para publicar, use o app em casa.</div>`;
+
+  const pend = (D.queue || []).filter(q => q.status === 'pending'
+                    && diasAtraso(q.scheduled_time) < ABANDONO_DIAS)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const cap = D.scheduler?.config?.daily_limit;
+  const hoje = todayCount();
+  const st = (D.queue || []).reduce((a, q) => (a[q.status] = (a[q.status]||0)+1, a), {});
+  const yt = D.stats || {};
+
+  const serie = serie7dias();
+  const maxN = Math.max(...serie.map(x => x.n), 0);
+  const topo = Math.max(cap || 0, maxN, 1) * 1.25;
+  const noTeto = cap != null && hoje >= cap;
+
+  $('#hero').innerHTML = `
+    <div class="hero-top">
+      <div class="hero-name">${esc(D.canal.handle || D.canal.id)}</div>
+      <span class="chip">${D.scheduler?.running ? 'agendador ativo' : 'agendador parado'}</span>
+    </div>
+    <div class="hnum">
+      <div><div class="big">${hoje}${cap ? `<small>/${cap}</small>` : ''}</div>
+        <div class="lbl">publicados hoje</div></div>
+      <div class="side">
+        <div><b>${pend.length}</b> na fila</div>
+        <div><b>${yt.videos ?? (st.published || 0)}</b> no canal</div>
+      </div>
+    </div>
+    <div class="chart">
+      ${areaChart(serie, cap, topo, noTeto)}
+      <div class="days">${serie.map((x, i) =>
+        `<span class="${i===serie.length-1?'now':''}">${x.d.toLocaleDateString('pt-BR',{weekday:'narrow'})}</span>`
+      ).join('')}</div>
+    </div>`;
+
+  $('#kpis').innerHTML = yt.subs != null ? `
+    <div class="kpi"><div class="top"><div class="ico">${I.users}</div>
+      <div class="lab">Inscritos</div></div>
+      <div class="num">${num(yt.subs)}</div><div class="sub">${serie.reduce((a,x)=>a+x.n,0)} esta semana</div></div>
+    <div class="kpi"><div class="top"><div class="ico">${I.eye}</div>
+      <div class="lab">Views totais</div></div>
+      <div class="num">${num(yt.views)}</div><div class="sub">${yt.videos} vídeos no ar</div></div>` : '';
+
+  $('#nav').innerHTML = [['fila',I.fila,pend.length],['galeria',I.gal,0],['status',I.stat,0]]
+    .map(([k,ico,n]) => `<button data-v="${k}" class="${TAB===k?'active':''}">${ico}${n?`<i class="nb">${n}</i>`:''}</button>`).join('');
+  $('#nav').querySelectorAll('button').forEach(b => b.onclick = () => go(b.dataset.v));
+
+  renderFila(pend, cap, hoje);
+  renderGaleria();
+  renderStatus(st, cap, hoje, yt);
+}
+
+function renderFila(pend, cap, hoje) {
+  const el = $('#v-fila');
+  if (!pend.length) {
+    el.innerHTML = `<div class="empty"><div class="eic">${I.check}</div>
+      <b style="color:var(--text)">Tudo em dia</b></div>`;
+    return;
+  }
+  const cheio = cap != null && hoje >= cap;
+  // Alerta de "itens parados" removido (pedido do usuário) — o lixo off-theme já
+  // some pelo filtro ABANDONO_DIAS.
+  el.innerHTML = `<h2>Esperando você <span class="cnt">${pend.length} corte(s)</span></h2>` +
+    (cheio ? `<div class="notice warn"><span class="nic">${I.warn}</span><div>
+      <b>Teto diário atingido (${hoje}/${cap}).</b></div></div>` : '') +
+    `<div class="qgrid">` +
+    pend.map(q => {
+      const f = base(q.video_path);
+      const seo = q.seo_metadata || {};
+      const wide = (D.formatos || {})[f] === 'horizontal' || isWide(seo) || isWide(q);
+      const title = seo.title || f;
+      const dias = diasAtraso(q.scheduled_time);
+      return `<div class="qc">
+        <div class="im">
+          <img loading="lazy" alt="" src="${capa(f)}"
+               onerror="this.onerror=null;this.src='${PH(title, wide)}'">
+          <div class="sc">${I.bolt} ${Math.round(q.score ?? 0)}</div>
+          ${dias >= DIAS_SUSPEITO ? '<i class="dot"></i>' : ''}
+        </div>
+        <div class="qcap">${esc(title.length > 42 ? title.slice(0,40).trimEnd()+"…" : title)}</div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function renderGaleria() {
+  const el = $('#v-galeria');
+  const g = D.gallery || [];
+  if (!g.length) {
+    el.innerHTML = `<div class="empty"><div class="eic">${I.film}</div>
+      <b style="color:var(--text)">Galeria vazia</b></div>`;
+    return;
+  }
+  el.innerHTML = `<h2>Galeria <span class="cnt">${g.length} vídeos</span></h2><div class="grid">` +
+    g.map(v => {
+      const t = v.metadata?.seo?.title || v.filename;
+      const wide = (D.formatos || {})[v.filename] === 'horizontal' || isWide(v.metadata);
+      return `<div class="gcard">
+        <img loading="lazy" alt="" style="aspect-ratio:${wide?'16/9':'9/16'}" src="${capa(v.filename)}"
+             onerror="this.onerror=null;this.src='${PH(t, wide)}'">
+        <div class="cap">${esc(t)}</div></div>`;
+    }).join('') + `</div>`;
+}
+
+function renderStatus(st, cap, hoje, yt) {
+  const pct = cap ? Math.min(100, hoje/cap*100) : 0;
+  const linha = (ico, nome, sub, val) => `<div class="li"><div class="lic">${ico}</div>
+    <div class="k"><b>${nome}</b>${sub?`<span>${sub}</span>`:''}</div><div class="v">${val}</div></div>`;
+  $('#v-status').innerHTML = `
+    <h2>Hoje</h2>
+    <div class="card" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-size:32px;font-weight:750;letter-spacing:-.04em">${hoje}
+          ${cap?`<span style="font-size:15px;color:var(--dim)">/ ${cap}</span>`:''}</div>
+        <div style="font-size:11.5px;color:var(--muted)">publicados no YouTube</div>
+      </div>
+      <div class="bar2"><i class="${cap&&hoje>=cap?'full':''}" style="width:${pct}%"></i></div>
+    </div>
+    <h2>Sistema <span class="cnt">quando o retrato foi tirado</span></h2>
+    <div class="list">
+      ${linha(I.play,'Agendador','publica a fila', D.scheduler?.running
+        ? '<span style="color:var(--ok)">ativo</span>' : '<span style="color:var(--danger)">parado</span>')}
+      ${linha(I.clock,'Janela de posts','horário permitido',
+        D.scheduler?.config?.start_hour != null
+          ? `${D.scheduler.config.start_hour}h–${D.scheduler.config.end_hour}h` : '—')}
+      ${linha(I.warn,'Com erro','falharam ao publicar', st.error || 0)}
+    </div>
+    ${(() => {
+      const ok = (D.publications||[]).filter(p => p.status === 'success' && (p.platform||'youtube')==='youtube');
+      if (!ok.length) return '';
+      return `<h2>Deu certo <span class="cnt">${ok.length} no ar</span></h2>
+      <div class="list">${ok.slice(-10).reverse().map(p => {
+        const f = p.filename || '';
+        const nome = esc(String(f).replace(/\.mp4$/,'')).replace(/-/g,' ');
+        const quando = p.timestamp ? String(p.timestamp).slice(0,10).split('-').reverse().join('/') : '';
+        return `<div class="pub">
+          <img loading="lazy" alt="" src="${(D.pubPosters||{})[f] || PH(nome, true)}">
+          <div class="k"><b>${nome}</b><span>publicado ${quando}</span></div>
+          ${p.link ? `<a href="${esc(p.link)}" target="_blank">abrir ↗</a>` : ''}
+        </div>`;
+      }).join('')}</div>`;
+    })()}
+    ${BIOM && !faceAtivo() ? `<button onclick="ativarFaceUI(this)" style="width:100%;
+      margin-top:16px;padding:14px;border-radius:14px;border:1px solid var(--accent);
+      background:var(--accent-soft);color:var(--accent);font-family:inherit;
+      font-size:14px;font-weight:650;cursor:pointer">Entrar com Face ID da próxima vez</button>`
+     : (faceAtivo() ? `<div style="margin-top:16px;text-align:center;font-size:12px;
+       color:var(--ok)">✓ Face ID ativado neste iPhone</div>` : '')}
+    <div style="margin:16px 0 4px;font-size:11.5px;color:var(--dim);text-align:center;line-height:1.6">
+      Este é o espelho: só mostra. Publicar é pelo app em casa.
+    </div>`;
+}
+
+// Ativa o Face ID (chamado pelo botão no rodapé do Status). A senha já está
+// guardada aqui (o app está aberto), então registrarFace() tem o que desbloquear.
+async function ativarFaceUI(btn) {
+  btn.disabled = true; btn.textContent = 'Aguardando o Face ID…';
+  try {
+    await registrarFace();
+    btn.outerHTML = '<div style="margin-top:16px;text-align:center;font-size:12px;' +
+      'color:var(--ok)">✓ Face ID ativado — na próxima abertura ele entra pelo rosto</div>';
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Não deu — tocar pra tentar de novo';
+  }
+}
+
+function go(v) {
+  TAB = v;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === 'v-' + v));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+load();
+addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+</script>
+</body>
+</html>
